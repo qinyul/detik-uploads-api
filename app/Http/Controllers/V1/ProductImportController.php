@@ -5,7 +5,7 @@ namespace App\Http\Controllers\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ImportProductRequest;
 use App\Services\Product\ProductImportService;
-
+use Illuminate\Http\JsonResponse;
 
 class ProductImportController extends Controller
 {
@@ -21,8 +21,15 @@ class ProductImportController extends Controller
         $job = $this->importService->importProducts($path);
 
         return response()->json([
-            'import_job_id' => $job->id,
+            'job_id' => $job->id,
             'status' => $job->status,
         ], 202);
+    }
+
+    public function show(int $jobId): JsonResponse
+    {
+        $job = $this->importService->getStatus($jobId);
+
+        return response()->json($job);
     }
 }

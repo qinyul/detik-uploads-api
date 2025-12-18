@@ -13,5 +13,6 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('import')->middleware('auth:sanctum')->group(function () {
         Route::post('/products', [ProductImportController::class, 'import']);
+        Route::get('/status/{jobId}', [ProductImportController::class, 'show']);
     });
 });

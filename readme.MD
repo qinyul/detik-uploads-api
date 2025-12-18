@@ -189,7 +189,21 @@ docker compose up -d
 
 ## Running the Application
 
-### Option A: Using Makefile (macOS / Linux)
+### Option A: Mixed Setup (Common for Experienced Devs)
+
+-   PostgreSQL: local installation
+-   Redis: local installation
+-   Laravel: local (`php artisan serve`)
+
+This option avoids Docker entirely and is fully supported.
+
+Choose the setup that best matches your environment and experience level.
+
+```bash
+php artisan serve
+```
+
+### Option B: Using Makefile (macOS / Linux)
 
 A `Makefile` is provided to simplify development.
 
@@ -221,7 +235,7 @@ This avoids restarting containers unnecessarily.
 
 ---
 
-### Option B: Without Makefile (Windows-friendly)
+### Option C: Without Makefile (Windows-friendly)
 
 If `make` is not available (common on Windows), run commands manually:
 
@@ -236,6 +250,142 @@ Application will be available at:
 
 ```
 http://localhost:8000
+```
+
+---
+
+## 🧩 Tech Stack
+
+-   PHP 8.2+
+-   Laravel (latest)
+-   Laravel Sanctum (API auth)
+-   PostgreSQL
+-   Redis
+-   Docker & Docker Compose (optional)
+
+---
+
+## 📁 Directory Structure
+
+```
+app/
+ ├── Http/
+ │   ├── Controllers/Api/V1/
+ │   └── Requests/Api/V1/
+ ├── Services/
+ │   └── Auth/
+ │       └── AuthService.php
+```
+
+---
+
+## ✅ Design Principles
+
+-   Laravel conventions first
+-   Minimal abstraction
+-   Explicit over magic
+-   Transactions for business safety
+-   Optional Docker, never mandatory
+
+---
+
+## 🔐 Authentication Design
+
+-   Token-based authentication using **Laravel Sanctum**
+-   Clean separation of concerns:
+
+```
+Controller → Service → Model
+```
+
+### Why Service Layer?
+
+-   Thin controllers
+-   Testable business logic
+-   Centralized transactions & logging
+
+---
+
+## 📦 Import Products Flow (Authenticated)
+
+> Import products requires **login** and a valid Sanctum token.
+
+### End-to-End Flow
+
+1. User logs in via `POST /api/v1/login`
+2. API returns Sanctum access token
+3. Client sends request to `POST /api/v1/imports/products`
+
+    - Header: `Authorization: Bearer {token}`
+    - Body: CSV file upload
+
+4. API stores CSV file in `storage/app/imports`
+5. API creates `import_jobs` record with status `pending`
+6. API dispatches `ImportProductsJob` to **Redis queue**
+7. Queue worker processes the job:
+
+    - Update status to `in_progress`
+    - Read CSV file from storage
+    - Bulk insert / upsert products
+    - Update `total`, `success`, `failed`
+    - Mark job as `completed`
+
+8. If job fails:
+
+    - Status updated to `failed`
+    - CSV file is **not deleted** (kept for debugging or retry)
+
+---
+
+## 📝 Import Job Design Notes
+
+-   Import processing is **asynchronous** using Redis queue
+-   Database is the **source of truth** for job state
+-   Redis is used only for execution, never for persistence
+-   File storage is required because queue jobs are async
+-   CSV file deletion happens:
+
+    -   ✅ After successful job completion
+    -   ❌ Not on failure
+
+-   File deletion is part of the **same queue job lifecycle**
+-   No additional cleanup job or queue is created
+
+---
+
+## 🧪 Error Handling Strategy
+
+-   Services may throw exceptions
+-   Controllers **do not catch** exceptions
+-   Laravel global exception handler returns JSON responses
+
+This avoids:
+
+-   Duplicate try/catch logic
+-   Swallowed exceptions
+-   Incorrect HTTP status codes
+
+---
+
+## 📁 Directory Structure
+
+```
+app/
+ ├── Http/
+ │   ├── Controllers/Api/V1/
+ │   └── Requests/Api/V1/
+ ├── Services/
+ │   ├── Auth/
+ │   │   └── AuthService.php
+ │   └── Import/
+ │       └── ProductImportService.php
+ ├── Jobs/
+ │   └── ImportProductsJob.php
+ ├── Models/
+ │   ├── User.php
+ │   ├── Product.php
+ │   └── ImportJob.php
+
 ```
 
 ---

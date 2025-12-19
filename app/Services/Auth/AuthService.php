@@ -55,13 +55,4 @@ class AuthService
         Audit::info('User logged in successfully');
         return $user->createToken('api')->plainTextToken;
     }
-
-    public function logout(User $user): void
-    {
-        $token = $user->currentAccessToken();
-        if ($token instanceof PersonalAccessToken) {
-            Audit::info('User logged out');
-            $token->delete();
-        }
-    }
 }

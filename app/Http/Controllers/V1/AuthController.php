@@ -44,13 +44,4 @@ class AuthController extends Controller
             'token_type' => 'Bearer'
         ], 201);
     }
-
-    public function logout(Request $request)
-    {
-        $this->authService->logout($request->user());
-
-        return response()->json([
-            'message' => 'Logged out'
-        ]);
-    }
 }

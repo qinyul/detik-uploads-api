@@ -417,5 +417,3 @@ This collection uses **Postman Scripts** to automate variables. You do not need 
     -   Go to the **Check Job Status** request.
     -   Just click **Send**.
     -   The URL uses `{{job_id}}` variable which was auto-populated from Step 2.
-
----

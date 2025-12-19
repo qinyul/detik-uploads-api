@@ -22,61 +22,133 @@ class ImportProductsJob implements ShouldQueue
         private readonly int $importJobId
     ) {}
 
+    private function readCsvInChunks(string $path, int $batchSize): \Generator
+    {
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            throw new \RuntimeException("Unable to open CSV file: {$path}");
+        }
+
+        try {
+            $header = fgetcsv($handle);
+            if ($header === false) {
+                throw new \RuntimeException("CSV header not found");
+            }
+            $chunk = [];
+            $rowNumber = 1;
+
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNumber++;
+
+                if (count($row) !== count($header)) {
+                    Audit::warning('CSV column mismatch', [
+                        'job_id'        => $this->importJobId,
+                        'row_number'    => $rowNumber,
+                        'expected_cols' => count($header),
+                        'actual_cols'   => count($row),
+                    ]);
+                    continue;
+                }
+
+                $chunk[] = [
+                    'row_number' => $rowNumber,
+                    'data' => array_combine($header, $row),
+                ];
+
+                if (count($chunk) === $batchSize) {
+                    Audit::debug('CSV chunk ready', [
+                        'job_id'     => $this->importJobId,
+                        'chunk_size' => count($chunk),
+                        'last_row'   => $rowNumber,
+                    ]);
+                    yield $chunk;
+                    $chunk = [];
+                }
+            }
+
+            if (!empty($chunk)) {
+                yield $chunk;
+            }
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private function validateRow(array $data): array
+    {
+        return validator($data, [
+            'name'  => 'required|string|max:255',
+            'sku'   => 'required|string|max:100',
+            'price' => 'required|numeric|min:0|max:99999999.99',
+            'stock' => 'required|integer|min:0',
+        ])->validate();
+    }
 
     public function handle(): void
     {
         $startTime = microtime(true);
+        $batchSize = config('import.products_batch_size', 500);
         $importJob = ImportJob::findOrFail($this->importJobId);
-
-        Audit::info("Starting Product Import", [
-            'job_id' => $importJob->id,
-            'file' => $importJob->filename
-        ]);
-
         $importJob->update(['status' => ImportJob::STATUS_IN_PROGRESS]);
 
+        Audit::info('Import configuration', [
+            'job_id'     => $importJob->id,
+            'file'       => $importJob->filename,
+            'batch_size' => $batchSize,
+        ]);
+
         $path = Storage::path($importJob->filename);
-        $rows = array_map('str_getcsv', file($path));
-        $header = array_shift($rows);
 
-        $rows = array_filter($rows, function ($row) {
-            return $row != null && reset($row) != null;
-        });
-
-        $total = count($rows);
+        $total = 0;
         $success = 0;
         $failed = 0;
 
         DB::transaction(function () use (
-            $rows,
-            $header,
+            $path,
             $importJob,
+            $batchSize,
+            &$total,
             &$success,
             &$failed,
         ) {
-            foreach ($rows as $index => $row) {
-                // real csv row index + 2 because of header + index 0 start
-                $csvRowNumber = $index + 2;
-                try {
-                    $data = array_combine($header, $row);
 
-                    Product::create([
-                        'name' => $data['name'],
-                        'sku' => $data['sku'],
-                        'price' => $data['price'],
-                        'stock' => $data['stock']
-                    ]);
+            foreach ($this->readCsvInChunks($path, $batchSize) as $chunk) {
+                foreach ($chunk as  $row) {
+                    $total++;
+                    $csvRowNumber = $row['row_number'];
+                    $data = $row['data'];
 
-                    $success++;
-                } catch (Throwable $e) {
-                    $failed++;
-                    $sku = $data['sku'] ?? 'UNKNOWN';
+                    try {
+                        $validated = $this->validateRow($data);
 
-                    Audit::info("Import failed at Row {$csvRowNumber}", [
-                        'job_id' => $importJob->id,
-                        'sku' => $sku,
-                        'errror' => $e->getMessage()
-                    ]);
+                        Product::create([
+                            'name' => trim($validated['name']),
+                            'sku' => trim($validated['sku']),
+                            'price' => $validated['price'],
+                            'stock' => (int) $validated['stock']
+                        ]);
+                        $success++;
+                    } catch (\Throwable $e) {
+                        $failed++;
+
+                        Audit::error('Product import failed', [
+                            'job_id'     => $importJob->id,
+                            'row_number' => $csvRowNumber,
+                            'sku'        => $data['sku'] ?? null,
+                            'payload'    => $data,
+                            'message'    => $e->getMessage(),
+                        ]);
+                    }
+
+                    // progress log every 20 rows
+                    if ($total % 5 === 0) {
+                        Audit::info('Import progress', [
+                            'job_id'  => $importJob->id,
+                            'total'   => $total,
+                            'success' => $success,
+                            'failed'  => $failed,
+                        ]);
+                    }
                 }
             }
         });
@@ -102,12 +174,13 @@ class ImportProductsJob implements ShouldQueue
 
     public function failed(Throwable $e): void
     {
-        Audit::info("Import job failed", [
-            'error' => $e->getMessage(),
-        ]);
-
         ImportJob::where('id', $this->importJobId)->update([
             'status' => ImportJob::STATUS_FAILED
+        ]);
+
+        Audit::info("Import job failed", [
+            'job_id'  => $this->importJobId,
+            'error' => $e->getMessage(),
         ]);
     }
 }

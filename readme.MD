@@ -134,16 +134,17 @@ This project uses **one `.env` file** for both Laravel and Docker Compose.
 
 ### `.env`
 
-| Category   | Variable          | Description                     |
-| ---------- | ----------------- | ------------------------------- |
-| PostgreSQL | POSTGRES_VERSION  | PostgreSQL Docker image version |
-| PostgreSQL | POSTGRES_DB       | Database name                   |
-| PostgreSQL | POSTGRES_USER     | Database username               |
-| PostgreSQL | POSTGRES_PASSWORD | Database password               |
-| PostgreSQL | POSTGRES_PORT     | Exposed PostgreSQL port         |
-| Redis      | REDIS_VERSION     | Redis Docker image version      |
-| Redis      | REDIS_HOST        | Redis host (`127.0.0.1`)        |
-| Redis      | REDIS_PORT        | Redis port                      |
+| Category           | Variable                   | Description                             |
+| ------------------ | -------------------------- | --------------------------------------- |
+| PostgreSQL         | POSTGRES_VERSION           | PostgreSQL Docker image version         |
+| PostgreSQL         | POSTGRES_DB                | Database name                           |
+| PostgreSQL         | POSTGRES_USER              | Database username                       |
+| PostgreSQL         | POSTGRES_PASSWORD          | Database password                       |
+| PostgreSQL         | POSTGRES_PORT              | Exposed PostgreSQL port                 |
+| Redis              | REDIS_VERSION              | Redis Docker image version              |
+| Redis              | REDIS_HOST                 | Redis host (`127.0.0.1`)                |
+| Redis              | REDIS_PORT                 | Redis port                              |
+| Product Import CSV | IMPORT_PRODUCTS_BATCH_SIZE | CSV read batch size per queue iteration |
 
 Example:
 
@@ -350,6 +351,30 @@ Controller → Service → Model
 
 -   File deletion is part of the **same queue job lifecycle**
 -   No additional cleanup job or queue is created
+
+---
+
+## 🧩 Batch / Chunk Processing Strategy
+
+-   Why chunking is used
+    -   Prevents loading the entire CSV into memory
+    -   Allows progress tracking on large files
+    -   Works well with queue workers
+-   Important distinction
+
+    -   Precise error reporting
+    -   Exact row number logging
+    -   Partial success (bad rows don’t break good ones)
+
+-   ⚙️ Batch Size Configuration
+
+```
+    // config/import.php
+
+    return [
+        'products_batch_size' => env('IMPORT_PRODUCTS_BATCH_SIZE', 500),
+    ];
+```
 
 ---
 

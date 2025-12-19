@@ -17,6 +17,44 @@ This setup is ideal for:
 
 ---
 
+## ⚡ Quick Start / Installation
+
+### 1. Prerequisites
+
+-   **PHP 8.2+**
+-   **Composer**
+-   **Docker** (Optional, for Database & Redis)
+
+### 2. Install Dependencies and Run App
+
+```bash
+# --- 🛠️ STEP 1: INITIAL SETUP (Run Once) ---
+# Install PHP dependencies
+composer install
+
+# Copy the example environment file
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+
+# Database Migration
+# Vital: Database must be running before migration!
+php artisan migrate
+
+# --- 🚀 STEP 2: RUNNING THE APP (Every Time) ---
+
+# You need TWO separate terminal tabs for the app to function correctly.
+# 🖥️ Terminal A: Start API Server
+php artisan serve
+
+# ⚙️ Terminal B: Start Queue Worker (MANDATORY)
+# Required for processing CSV imports in the background
+php artisan queue:listen
+```
+
+---
+
 ## 🐳 Docker Usage (Optional)
 
 Docker is **optional**.

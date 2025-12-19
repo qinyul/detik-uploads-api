@@ -414,3 +414,37 @@ app/
 ```
 
 ---
+
+## 🔌 API Documentation (Postman)
+
+This repository includes a Postman Collection to help you test the API endpoints efficiently.
+
+### 📥 Import Guide
+
+1.  Download the files located in the `postman/` directory:
+    -   [📄 Download Collection](./postman-collection/detik-test.postman_collection.json)
+    -   [📄 Download Environment](./postman-collection/detik-test.postman_environment.json)
+2.  Open Postman and click **Import** (Top left).
+3.  Select the **"Laravel Local"** environment in the top right dropdown.
+
+### 🚀 Automated Workflow
+
+This collection uses **Postman Scripts** to automate variables. You do not need to copy-paste tokens or IDs manually.
+
+1.  **Step 1: Authenticate**
+
+    -   Send a request to **Register** or **Login**.
+    -   The script will **automatically** extract the `access_token` and save it to your environment.
+
+2.  **Step 2: Upload CSV**
+
+    -   Go to the **Import Products** request.
+    -   Upload your CSV file in the **Body** tab.
+    -   Upon success, the script will **automatically** save the returned `job_id` to the environment.
+
+3.  **Step 3: Check Progress**
+    -   Go to the **Check Job Status** request.
+    -   Just click **Send**.
+    -   The URL uses `{{job_id}}` variable which was auto-populated from Step 2.
+
+---

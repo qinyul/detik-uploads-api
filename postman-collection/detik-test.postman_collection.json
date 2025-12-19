@@ -1,0 +1,231 @@
+{
+	"info": {
+		"_postman_id": "20fc7d8d-2b7d-4fa3-b98f-b24674143513",
+		"name": "detik-test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18252648"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 1. Ambil data JSON dari response",
+									"var jsonData = pm.response.json();",
+									"",
+									"// 2. Cek apakah response memiliki field 'access_token'",
+									"if (jsonData.access_token) {",
+									"    ",
+									"    // 3. Simpan token ke Environment Variable dengan nama 'access_token'",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    ",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"johndal1@example.com\",\n    \"password\": \"12345678\",\n    \"password_confirmation\": \"12345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/api/v1/register",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 1. Ambil data JSON dari response",
+									"var jsonData = pm.response.json();",
+									"",
+									"// 2. Cek apakah response memiliki field 'access_token'",
+									"if (jsonData.access_token) {",
+									"    ",
+									"    // 3. Simpan token ke Environment Variable dengan nama 'access_token'",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    ",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"johndal@example.com\",\n    \"password\": \"12345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/api/v1/login",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product",
+			"item": [
+				{
+					"name": "product csv bulk update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 1. Ambil data JSON dari response",
+									"var jsonData = pm.response.json();",
+									"",
+									"// 2. Cek apakah response memiliki field 'access_token'",
+									"if (jsonData.job_id) {",
+									"    ",
+									"    // 3. Simpan token ke Environment Variable dengan nama 'access_token'",
+									"    pm.environment.set(\"job_id\", jsonData.job_id);",
+									"    ",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/Users/barqifuady/Documents/GitHub/test-detik/uploads-api/test-data.csv"
+								}
+							]
+						},
+						"url": {
+							"raw": "localhost:8000/api/v1/import/products",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"import",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check bulk status update",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/api/v1/import/status/{{job_id}}",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"import",
+								"status",
+								"{{job_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

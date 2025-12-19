@@ -1,4 +1,4 @@
-# Laravel API – Local Runtime + Docker Infra
+# Laravel API – CSV Bulk Upload
 
 This project uses a **simple, pragmatic architecture** optimized for fast development:
 
@@ -32,35 +32,6 @@ Docker is **optional**.
 -   Redis is already installed locally
 
 Laravel works in **both cases**.
-
----
-
-## ▶️ Running with Docker (Infra Only)
-
-```bash
-docker compose up -d
-```
-
-This starts:
-
--   PostgreSQL
--   Redis
-
-Then run Laravel locally:
-
-```bash
-php artisan serve
-```
-
----
-
-## ▶️ Running Without Docker
-
-Ensure PostgreSQL & Redis are running locally, then:
-
-```bash
-php artisan serve
-```
 
 ---
 
@@ -183,7 +154,7 @@ REDIS_PORT=6379
 Start infrastructure:
 
 ```bash
-docker compose up -d
+docker-compose up -d
 ```
 
 ---
@@ -212,7 +183,7 @@ A `Makefile` is provided to simplify development.
 .PHONY: up serve dev
 
 up:
-	@docker compose ps | grep -q "postgres" || docker compose up -d
+	@docker-compose ps | grep -q "postgres" || docker-compose up -d
 
 serve:
 	php artisan serve
